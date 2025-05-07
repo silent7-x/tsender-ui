@@ -1,11 +1,9 @@
-import AirdropForm from "./components/AirdropForm";
+import { AirdropForm } from "./components/AirdropForm";
 
-function App() {
+export function App() {
   return (
-    <main className="min-h-screen max-w-screen-xl mx-auto pt-4 px-6 bg-amber-100">
+    <main className="min-h-screen max-w-screen-xl mx-auto">
       <AirdropForm />
     </main>
   );
 }
-
-export default App;

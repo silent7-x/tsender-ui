@@ -20,6 +20,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
 import { isAddress } from "viem";
 import { z } from "zod";
 
@@ -78,6 +79,39 @@ const formSchema = z
     }
   });
 
+const submitSchema = z
+  .object({
+    tokenAddress: z
+      .string()
+      .min(1, "Token address is required")
+      .refine((val) => !val || isAddress(val), {
+        message: "Invalid Ethereum address",
+      }),
+    recipients: z
+      .string()
+      .min(1, "Recipients are required")
+      .transform(parseRecipients)
+      .refine((arr) => arr.length === 0 || areAllValidAddresses(arr), {
+        message: "All recipients must be valid Ethereum addresses",
+      }),
+    amounts: z
+      .string()
+      .min(1, "Amounts are required")
+      .transform(parseAmounts)
+      .refine((arr) => arr.length === 0 || areAllPositiveBigInts(arr), {
+        message: "All amounts must be positive integers",
+      }),
+  })
+  .superRefine((data, ctx) => {
+    if (data.recipients.length !== data.amounts.length) {
+      ctx.addIssue({
+        path: ["amounts"],
+        code: z.ZodIssueCode.custom,
+        message: "Recipients and amounts count must match",
+      });
+    }
+  });
+
 export function AirdropForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -97,16 +131,29 @@ export function AirdropForm() {
   }, [recipients, amounts, form]);
 
   function submit(data: z.infer<typeof formSchema>) {
-    if (!data.tokenAddress || !data.recipients.trim() || !data.amounts.trim()) {
-      // Affiche une erreur custom, toast, etc.
-      console.log("There is a missing field");
+    const result = submitSchema.safeParse(data);
+    if (!result.success) {
+      toast.error("Error", {
+        description: (
+          <div>
+            {result.error.errors.map((e, i) => (
+              <div className="text-muted-foreground" key={i}>
+                {e.message}
+              </div>
+            ))}
+          </div>
+        ),
+      });
       return;
     }
-    console.log(data);
+
+    toast("Airdrop ready to be sent!", {
+      description: <div className="text-muted-foreground">pending...</div>,
+    });
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto p-6 space-y-4">
+    <Card className="w-full max-w-screen-xl mx-auto p-6">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(submit)}
@@ -158,13 +205,13 @@ export function AirdropForm() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full">
-            Send Airdrop
-          </Button>
+          <div className="flex justify-center">
+            <Button type="submit" className="w-fit">
+              Send Airdrop
+            </Button>
+          </div>
         </form>
       </Form>
     </Card>
   );
 }
-
-export default AirdropForm;
