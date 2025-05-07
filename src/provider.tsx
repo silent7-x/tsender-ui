@@ -26,7 +26,9 @@ const queryClient = new QueryClient();
 export function Web3Provider({ children }: { children: React.ReactNode }) {
   // Hydration safety check: ensure component mounts on client before rendering children
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>

@@ -1,0 +1,29 @@
+import { isAddress } from "viem";
+
+export function parseTokenAddress(input: string): string {
+  return input.trim();
+}
+
+export function parseRecipients(input: string): string[] {
+  return input
+    .trim()
+    .split(/[\n,]+/)
+    .map((addr) => addr.trim())
+    .filter(Boolean);
+}
+
+export function parseAmounts(input: string): string[] {
+  return input
+    .trim()
+    .split(/[\n,]+/)
+    .map((amt) => amt.trim())
+    .filter(Boolean);
+}
+
+export function areAllValidAddresses(arr: string[]): boolean {
+  return arr.every((address) => isAddress(address));
+}
+
+export function areAllPositiveBigInts(arr: string[]): boolean {
+  return arr.every((n) => /^\d+$/.test(n));
+}
