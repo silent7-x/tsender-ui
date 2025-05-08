@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -153,65 +152,63 @@ export function AirdropForm() {
   }
 
   return (
-    <Card className="w-full max-w-screen-xl mx-auto p-6">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(submit)}
-          className="space-y-4"
-          autoComplete="off"
-        >
-          <FormField
-            control={form.control}
-            name="tokenAddress"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Token Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="0x..." {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="recipients"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Recipients</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="one address per line or comma-separated"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="amounts"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Amounts</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="amounts in wei, one per line or comma-separated"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex justify-center">
-            <Button type="submit" className="w-fit">
-              Send Airdrop
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </Card>
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(submit)}
+        className="space-y-4"
+        autoComplete="off"
+      >
+        <FormField
+          control={form.control}
+          name="tokenAddress"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Token Address</FormLabel>
+              <FormControl>
+                <Input placeholder="0x..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="recipients"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Recipients</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="one address per line or comma-separated"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="amounts"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amounts</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="amounts in wei, one per line or comma-separated"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-center">
+          <Button type="submit" className="w-fit">
+            Send Airdrop
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
