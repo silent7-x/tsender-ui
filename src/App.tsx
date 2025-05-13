@@ -6,7 +6,7 @@ import { Card } from "./components/ui/card";
 export function App() {
   return (
     <main className="min-h-screen max-w-screen-xl mx-auto">
-      <Header />
+      <Header title="T-Sender" />
       <Card className="p-6">
         <FormHeader />
         <AirdropForm />

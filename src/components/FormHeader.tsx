@@ -1,15 +1,17 @@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { cn } from "@/lib/utils";
+import { useState, type ComponentPropsWithoutRef } from "react";
 
-export function FormHeader() {
+type FormHeaderProps = ComponentPropsWithoutRef<"div">;
+
+export const FormHeader = ({ className }: FormHeaderProps) => {
   const [mode, setMode] = useState("safe");
-  console.log("mode", mode);
 
   return (
     <Tabs
       value={mode}
       onValueChange={setMode}
-      className="flex flex-row justify-between"
+      className={cn("flex flex-row justify-between", className)}
     >
       <h1 className="text-xl text-foreground">T-Sender</h1>
       <TabsList>
@@ -18,4 +20,4 @@ export function FormHeader() {
       </TabsList>
     </Tabs>
   );
-}
+};

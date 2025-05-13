@@ -9,109 +9,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  areAllPositiveBigInts,
-  areAllValidAddresses,
-  parseAmounts,
-  parseRecipients,
-  parseTokenAddress,
-} from "@/lib/form-helpers";
+import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import type { ComponentPropsWithoutRef } from "react";
 import { useEffect } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { isAddress } from "viem";
 import { z } from "zod";
 
-const formSchema = z
-  .object({
-    tokenAddress: z.string(),
-    recipients: z.string(),
-    amounts: z.string(),
-  })
-  .superRefine((data, ctx) => {
-    const token = parseTokenAddress(data.tokenAddress);
-    const recipientsArr = parseRecipients(data.recipients);
-    const amountsArr = parseAmounts(data.amounts);
-    console.log(token, recipientsArr, amountsArr);
+type AirdropFormProps = ComponentPropsWithoutRef<"form">;
 
-    if (token && !isAddress(token)) {
-      ctx.addIssue({
-        path: ["tokenAddress"],
-        code: z.ZodIssueCode.custom,
-        message: "Invalid Ethereum address",
-      });
-    }
-
-    if (
-      data.recipients &&
-      (!areAllValidAddresses(recipientsArr) || recipientsArr.length === 0)
-    ) {
-      ctx.addIssue({
-        path: ["recipients"],
-        code: z.ZodIssueCode.custom,
-        message: "All recipients must be valid Ethereum addresses",
-      });
-    }
-
-    if (
-      data.amounts &&
-      (!areAllPositiveBigInts(amountsArr) || amountsArr.length === 0)
-    ) {
-      ctx.addIssue({
-        path: ["amounts"],
-        code: z.ZodIssueCode.custom,
-        message: "All amounts must be positive integers",
-      });
-    }
-
-    if (
-      recipientsArr.length > 0 &&
-      amountsArr.length > 0 &&
-      recipientsArr.length !== amountsArr.length
-    ) {
-      ctx.addIssue({
-        path: ["amounts"],
-        code: z.ZodIssueCode.custom,
-        message: "Recipients and amounts count must match",
-      });
-    }
-  });
-
-const submitSchema = z
-  .object({
-    tokenAddress: z
-      .string()
-      .min(1, "Token address is required")
-      .refine((val) => !val || isAddress(val), {
-        message: "Invalid Ethereum address",
-      }),
-    recipients: z
-      .string()
-      .min(1, "Recipients are required")
-      .transform(parseRecipients)
-      .refine((arr) => arr.length === 0 || areAllValidAddresses(arr), {
-        message: "All recipients must be valid Ethereum addresses",
-      }),
-    amounts: z
-      .string()
-      .min(1, "Amounts are required")
-      .transform(parseAmounts)
-      .refine((arr) => arr.length === 0 || areAllPositiveBigInts(arr), {
-        message: "All amounts must be positive integers",
-      }),
-  })
-  .superRefine((data, ctx) => {
-    if (data.recipients.length !== data.amounts.length) {
-      ctx.addIssue({
-        path: ["amounts"],
-        code: z.ZodIssueCode.custom,
-        message: "Recipients and amounts count must match",
-      });
-    }
-  });
-
-export function AirdropForm() {
+export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -155,8 +64,9 @@ export function AirdropForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(submit)}
-        className="space-y-4"
+        className={cn("space-y-6", className)}
         autoComplete="off"
+        {...props}
       >
         <FormField
           control={form.control}
@@ -211,4 +121,4 @@ export function AirdropForm() {
       </form>
     </Form>
   );
-}
+};
