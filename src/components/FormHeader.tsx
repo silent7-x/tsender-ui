@@ -5,12 +5,12 @@ import { useState, type ComponentPropsWithoutRef } from "react";
 type FormHeaderProps = ComponentPropsWithoutRef<"div">;
 
 export const FormHeader = ({ className }: FormHeaderProps) => {
-  const [mode, setMode] = useState("safe");
+  const [mode, setMode] = useState<"safe" | "unsafe">("safe");
 
   return (
     <Tabs
       value={mode}
-      onValueChange={setMode}
+      onValueChange={(v) => setMode(v as "safe" | "unsafe")}
       className={cn("flex flex-row justify-between", className)}
     >
       <h1 className="text-xl text-foreground">T-Sender</h1>
