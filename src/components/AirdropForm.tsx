@@ -11,15 +11,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { chainsToTSender } from "@/constants";
+import { getApprovedAmount } from "@/lib/allowance";
 import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { readContract } from "@wagmi/core";
 import { LoaderPinwheel } from "lucide-react";
 import { type ComponentPropsWithoutRef, useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
-import { type Address, erc20Abi, isAddress } from "viem";
+import { isAddress } from "viem";
 import { useAccount, useChainId, useConfig } from "wagmi";
 import { z } from "zod";
 
@@ -47,30 +47,6 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   useEffect(() => {
     form.trigger("amounts");
   }, [recipients, amounts, form]);
-
-  async function getApprovedAmount(
-    spenderAddress: Address,
-    erc20TokenAddress: Address,
-    ownerAddress: Address
-  ): Promise<bigint> {
-    console.log(`Checking allowance for token ${erc20TokenAddress}`);
-    console.log(`Owner: ${ownerAddress}`);
-    console.log(`Spender: ${spenderAddress}`);
-
-    try {
-      const allowance = await readContract(config, {
-        abi: erc20Abi,
-        address: erc20TokenAddress,
-        functionName: "allowance",
-        args: [ownerAddress, spenderAddress],
-      });
-      console.log("Raw allowance response:", allowance);
-
-      return allowance;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : String(error));
-    }
-  }
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     const result = submitSchema.safeParse(data);
@@ -119,6 +95,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
 
     try {
       const approvedAmount = await getApprovedAmount(
+        config,
         tSenderAddress,
         tokenAddress,
         account.address
