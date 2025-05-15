@@ -28,10 +28,14 @@ export function areAllPositiveBigInts(arr: unknown): boolean {
   return Array.isArray(arr) && arr.every((n) => /^\d+$/.test(n));
 }
 
-export function stringifyBigInt(obj: unknown, space?: number) {
-  return JSON.stringify(
-    obj,
-    (_, v) => (typeof v === "bigint" ? v.toString() : v),
-    space
-  );
+export function sumBigIntStrings(arr: string[]): bigint {
+  return arr.reduce((acc, n) => acc + BigInt(n), 0n);
 }
+
+// export function stringifyBigInt(obj: unknown, space?: number) {
+//   return JSON.stringify(
+//     obj,
+//     (_, v) => (typeof v === "bigint" ? v.toString() : v),
+//     space
+//   );
+// }

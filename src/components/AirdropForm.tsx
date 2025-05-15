@@ -11,9 +11,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { chainsToTSender } from "@/constants";
-import { getApprovedAmount } from "@/lib/allowance";
 import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
 import { cn } from "@/lib/utils";
+import { getApprovedAmount } from "@/lib/utils/allowance";
+import { sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoaderPinwheel } from "lucide-react";
 import { type ComponentPropsWithoutRef, useEffect, useState } from "react";
@@ -27,6 +28,7 @@ type AirdropFormProps = ComponentPropsWithoutRef<"form">;
 
 export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
+
   const chainId = useChainId();
   const config = useConfig();
   const account = useAccount();
@@ -69,8 +71,8 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
       return;
     }
 
-    const tokenAddress = result.data.tokenAddress;
     const tSenderAddress = chainsToTSender[chainId]?.tsender;
+    const tokenAddress = result.data.tokenAddress;
 
     if (!tSenderAddress || !isAddress(tSenderAddress)) {
       toast.error("Error", {
@@ -91,6 +93,9 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
       return;
     }
 
+    const amounts = result.data.amounts;
+    const totalAmount = sumBigIntStrings(amounts);
+
     setIsLoading(true);
 
     try {
@@ -103,15 +108,23 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
 
       console.log("Approved amount:", approvedAmount);
 
+      if (approvedAmount < totalAmount) {
+        // Logic to request approval will go here
+        console.log("not enough approved");
+      } else {
+        // Logic to proceed with the airdrop directly
+        console.log("enough approved");
+      }
+
       toast("Airdrop ready to be sent", {
         description: <pre>Pending...</pre>,
       });
     } catch (error) {
       console.error(error);
       toast.error("Failed to fetch token allowance!", {});
-    } finally {
-      setIsLoading(false);
     }
+
+    setIsLoading(false);
   }
 
   return (
@@ -132,7 +145,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
                 <Input placeholder="0x..." {...field} />
               </FormControl>
               <FormDescription className="pl-4 text-xs">
-                ERC20 token to send
+                ERC20 token address to send
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -151,7 +164,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
                 />
               </FormControl>
               <FormDescription className="pl-4 text-xs">
-                Address receiving the airdrop
+                Addresses receiving the airdrop, one per line or comma-separated
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -170,7 +183,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
                 />
               </FormControl>
               <FormDescription className="pl-4 text-xs">
-                Amount of tokens to send
+                Amount of tokens to send in wei, one per line or comma-separated
               </FormDescription>
               <FormMessage />
             </FormItem>
