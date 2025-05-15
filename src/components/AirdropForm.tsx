@@ -144,7 +144,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
             <FormItem>
               <FormLabel>Token Address</FormLabel>
               <FormControl>
-                <Input placeholder="0x..." {...field} />
+                <Input placeholder="0x..." spellCheck={false} {...field} />
               </FormControl>
               <FormDescription className="pl-4 text-xs">
                 ERC20 token address to send
@@ -162,6 +162,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
               <FormControl>
                 <Textarea
                   placeholder="one address per line or comma-separated"
+                  spellCheck={false}
                   {...field}
                 />
               </FormControl>
