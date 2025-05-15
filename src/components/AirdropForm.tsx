@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { getApprovedAmount } from "@/lib/utils/allowance";
 import { sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { LoaderPinwheel } from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { type ComponentPropsWithoutRef, useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -116,6 +116,8 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
         console.log("enough approved");
       }
 
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
       toast("Airdrop ready to be sent", {
         description: <pre>Pending...</pre>,
       });
@@ -190,9 +192,17 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
           )}
         />
         <div className="flex justify-center">
-          <Button type="submit" disabled={isLoading} className="w-fit">
-            {isLoading && <LoaderPinwheel className=" animate-spin" />}
-            Send Airdrop
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-32 cursor-pointer"
+          >
+            {isLoading ? (
+              <LoaderCircle className="size-6 animate-[spin_2s_linear_infinite]" />
+            ) : (
+              "Send Airdrop"
+            )}
+            {/* Send Airdrop */}
           </Button>
         </div>
       </form>

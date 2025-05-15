@@ -23,6 +23,10 @@ describe("parseRecipients", () => {
   });
   it("trim and filter empty", () => {
     expect(parseRecipients(" a , \n ,b ")).toEqual(["a", "b"]);
+    expect(parseRecipients(" a ,,b ")).toEqual(["a", "b"]);
+    expect(parseRecipients(" a \n b ")).toEqual(["a", "b"]);
+    expect(parseRecipients(" a , , b ")).toEqual(["a", "b"]);
+    expect(parseRecipients(" a , \n, , b ")).toEqual(["a", "b"]);
   });
 });
 
