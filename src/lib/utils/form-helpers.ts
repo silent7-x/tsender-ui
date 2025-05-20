@@ -29,6 +29,9 @@ export function areAllPositiveBigInts(arr: unknown): boolean {
 }
 
 export function sumBigIntStrings(arr: string[]): bigint {
+  if (!areAllPositiveBigInts(arr)) {
+    return 0n;
+  }
   return arr.reduce((acc, n) => acc + BigInt(n), 0n);
 }
 

@@ -12,7 +12,7 @@ createRoot(document.getElementById("root")!).render(
     <Web3Provider>
       <ThemeProvider>
         <App />
-        <Toaster closeButton={true} />
+        <Toaster closeButton={true} duration={5000} />
       </ThemeProvider>
     </Web3Provider>
   </StrictMode>
