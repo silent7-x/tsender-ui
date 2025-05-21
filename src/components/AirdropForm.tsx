@@ -65,10 +65,10 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const recipients = useWatch({ control: form.control, name: "recipients" });
   const amounts = useWatch({ control: form.control, name: "amounts" });
 
-  const [isAllowanceLoading, setIsAllowanceLoading] = useState(false);
+  const [isAllowanceLoading, setIsAllowanceLoading] = useState<boolean>(false);
   const [allowance, setAllowance] = useState<bigint | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [showNetworkError, setShowNetworkError] = useState(false);
+  const [showNetworkError, setShowNetworkError] = useState<boolean>(false);
 
   const watchedAmounts = form.watch("amounts");
   const watchedRecipients = form.watch("recipients");
@@ -100,8 +100,12 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
         return;
       }
 
-      setIsAllowanceLoading(true);
       try {
+        setIsAllowanceLoading(true);
+
+        //to delete later
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+
         const tokenAddress = form.getValues("tokenAddress");
 
         const approvedAmount = await getApprovedAmount(
@@ -110,17 +114,19 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
           tokenAddress as Address,
           account.address
         );
+        console.log("approvedAmount", approvedAmount);
         setAllowance(approvedAmount);
-      } catch {
+      } catch (err) {
+        console.log(err);
         setAllowance(null);
+      } finally {
+        setIsAllowanceLoading(false);
       }
-      setIsAllowanceLoading(false);
     };
 
     if (timerRef.current) clearTimeout(timerRef.current);
-    setIsAllowanceLoading(true);
 
-    timerRef.current = setTimeout(checkAllowance, 2000);
+    timerRef.current = setTimeout(checkAllowance, 800);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -232,10 +238,8 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
             hash: approvalHash,
           });
 
-          toast(
-            <span className="text-green-500 text-base font-bold">
-              Approval successful
-            </span>,
+          toast.success(
+            <span className="text-base">Approval successful</span>,
             {
               description: (
                 <pre className="break-all whitespace-pre-wrap text-muted-foreground">
@@ -275,25 +279,19 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
             }
           );
 
-          toast(
-            <span className="text-green-500 text-base font-bold">
-              Airdrop successful
-            </span>,
-            {
-              description: (
-                <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                  <p>Transaction hash:</p>
-                  <p>{airdropTransactionReceipt.transactionHash}</p>
-                </pre>
-              ),
-            }
-          );
+          toast.success(<span className="text-base">Airdrop successful</span>, {
+            description: (
+              <pre className="break-all whitespace-pre-wrap text-muted-foreground">
+                <p>Transaction hash:</p>
+                <p>{airdropTransactionReceipt.transactionHash}</p>
+              </pre>
+            ),
+          });
         } catch (err) {
           throw new Error(err instanceof Error ? err.message : String(err));
         }
       } else {
-        // Logic to proceed with the airdrop directly
-        console.log("enough approved");
+        console.log("Enough tokens approved");
 
         const airdropTransactionHash = await writeContractAsync({
           abi: tsenderAbi,
@@ -324,19 +322,14 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
           }
         );
 
-        toast(
-          <span className="text-green-500 text-base font-bold">
-            Airdrop successful
-          </span>,
-          {
-            description: (
-              <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                <p>Transaction hash:</p>
-                <p>{airdropTransactionReceipt.transactionHash}</p>
-              </pre>
-            ),
-          }
-        );
+        toast.success(<span className="text-base">Airdrop successful</span>, {
+          description: (
+            <pre className="break-all whitespace-pre-wrap text-muted-foreground">
+              <p>Transaction hash:</p>
+              <p>{airdropTransactionReceipt.transactionHash}</p>
+            </pre>
+          ),
+        });
       }
     } catch (err) {
       console.error(err);
