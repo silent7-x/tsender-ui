@@ -1,12 +1,4 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { NetworkErrorDialog } from "@/components/NetworkErrorDialog";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -19,23 +11,19 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { chainsToTSender, tsenderAbi } from "@/constants";
+import { chainsToTSender, erc20Abi, tsenderAbi } from "@/constants";
+import { useAllowanceDebounced } from "@/hooks/useAllowanceDebounced";
 import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
 import { cn } from "@/lib/utils";
-import { getApprovedAmount } from "@/lib/utils/allowance";
+import { getTokenBalance } from "@/lib/utils/balance";
 import { parseAmounts, sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { LoaderCircle } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ComponentPropsWithoutRef,
-} from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { erc20Abi, isAddress, type Address } from "viem";
+import { isAddress, type Address } from "viem";
 import { useAccount, useChainId, useConfig, useWriteContract } from "wagmi";
 import { z } from "zod";
 
@@ -45,13 +33,8 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const chainId = useChainId();
   const config = useConfig();
   const account = useAccount();
-  const {
-    // data: hash,
-    isPending,
-    // error,
-    writeContractAsync,
-  } = useWriteContract();
-
+  const tSenderAddress = chainsToTSender[chainId]?.tsender as Address;
+  const [showNetworkError, setShowNetworkError] = useState<boolean>(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -62,19 +45,39 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     },
   });
 
-  const recipients = useWatch({ control: form.control, name: "recipients" });
-  const amounts = useWatch({ control: form.control, name: "amounts" });
+  const {
+    allowance,
+    isLoading,
+    isReady,
+    error: allowanceError,
+  } = useAllowanceDebounced({
+    tSenderAddress,
+    accountAddress: account.address,
+    amounts: form.watch("amounts"),
+    recipients: form.watch("recipients"),
+    tokenAddress: form.watch("tokenAddress"),
+    formStateErrors: form.formState.errors,
+    chainId,
+    config,
+    delay: 1000,
+  });
 
-  const [isAllowanceLoading, setIsAllowanceLoading] = useState<boolean>(false);
-  const [allowance, setAllowance] = useState<bigint | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [showNetworkError, setShowNetworkError] = useState<boolean>(false);
+  useEffect(() => {
+    if (allowanceError) {
+      toast(
+        <span className="text-destructive text-base font-bold">Error</span>,
+        {
+          description: (
+            <pre className="break-all whitespace-pre-wrap text-muted-foreground">
+              {allowanceError}
+            </pre>
+          ),
+        }
+      );
+    }
+  }, [allowanceError]);
 
-  const watchedAmounts = form.watch("amounts");
-  const watchedRecipients = form.watch("recipients");
-  const watchedTokenAddress = form.watch("tokenAddress");
-
-  const tSenderAddress = chainsToTSender[chainId]?.tsender;
+  const { isPending, writeContractAsync } = useWriteContract();
 
   useEffect(() => {
     if (!tSenderAddress || !isAddress(tSenderAddress)) {
@@ -82,67 +85,10 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     }
   }, [chainId, tSenderAddress]);
 
-  useEffect(() => {
-    form.trigger("amounts");
-  }, [recipients, amounts, form]);
-
-  useEffect(() => {
-    const checkAllowance = async () => {
-      if (
-        form.formState.errors.amounts ||
-        form.formState.errors.recipients ||
-        !form.getValues("tokenAddress") ||
-        !isAddress(form.getValues("tokenAddress")) ||
-        !account.address
-      ) {
-        setAllowance(null);
-        setIsAllowanceLoading(false);
-        return;
-      }
-
-      try {
-        setIsAllowanceLoading(true);
-
-        //to delete later
-        await new Promise((resolve) => setTimeout(resolve, 3000));
-
-        const tokenAddress = form.getValues("tokenAddress");
-
-        const approvedAmount = await getApprovedAmount(
-          config,
-          tSenderAddress as Address,
-          tokenAddress as Address,
-          account.address
-        );
-        console.log("approvedAmount", approvedAmount);
-        setAllowance(approvedAmount);
-      } catch (err) {
-        console.log(err);
-        setAllowance(null);
-      } finally {
-        setIsAllowanceLoading(false);
-      }
-    };
-
-    if (timerRef.current) clearTimeout(timerRef.current);
-
-    timerRef.current = setTimeout(checkAllowance, 800);
-
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, [
-    watchedAmounts,
-    watchedRecipients,
-    watchedTokenAddress,
-    account.address,
-    chainId,
-    config,
-    form,
-    tSenderAddress,
-  ]);
-
-  async function onSubmit(data: z.infer<typeof formSchema>) {
+  async function onSubmit(
+    data: z.infer<typeof formSchema>,
+    allowance: bigint | null
+  ) {
     const result = submitSchema.safeParse(data);
     if (!result.success) {
       toast(
@@ -199,27 +145,39 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     const recipients = result.data.recipients;
 
     try {
-      const approvedAmount = await getApprovedAmount(
-        config,
-        tSenderAddress,
-        tokenAddress,
-        account.address
-      );
-
-      console.log(
-        `Allowance needed: \n Current  ${approvedAmount} \n Required ${totalAmount}`
-      );
+      const approvedAmount = allowance ?? 0n;
 
       if (approvedAmount < totalAmount) {
         try {
+          const balance = await getTokenBalance(
+            config,
+            tokenAddress,
+            account.address
+          );
+
+          if (balance < totalAmount) {
+            toast(
+              <span className="text-destructive text-base font-bold">
+                Error
+              </span>,
+              {
+                description: (
+                  <pre className="break-all whitespace-pre-wrap text-muted-foreground">
+                    Insufficient token balance! You need {totalAmount} tokens in
+                    wei!
+                  </pre>
+                ),
+              }
+            );
+            return;
+          }
+
           const approvalHash = await writeContractAsync({
             abi: erc20Abi,
             address: tokenAddress,
             functionName: "approve",
             args: [tSenderAddress, totalAmount],
           });
-
-          console.log("Approval transaction hash:", approvalHash);
 
           toast(
             <span className="text-base">
@@ -257,8 +215,6 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
             args: [tokenAddress, recipients, amounts, totalAmount],
           });
 
-          console.log("Airdrop Transaction hash:", airdropTransactionHash);
-
           toast(
             <span className="text-base">
               Airdrop transaction sent with hash:
@@ -291,7 +247,26 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
           throw new Error(err instanceof Error ? err.message : String(err));
         }
       } else {
-        console.log("Enough tokens approved");
+        const balance = await getTokenBalance(
+          config,
+          tokenAddress,
+          account.address
+        );
+
+        if (balance < totalAmount) {
+          toast(
+            <span className="text-destructive text-base font-bold">Error</span>,
+            {
+              description: (
+                <pre className="break-all whitespace-pre-wrap text-muted-foreground">
+                  Insufficient token balance! You need {totalAmount} tokens in
+                  wei!
+                </pre>
+              ),
+            }
+          );
+          return;
+        }
 
         const airdropTransactionHash = await writeContractAsync({
           abi: tsenderAbi,
@@ -299,8 +274,6 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
           functionName: "airdropERC20",
           args: [tokenAddress, recipients, amounts, totalAmount],
         });
-
-        console.log("Airdrop Transaction hash:", airdropTransactionHash);
 
         toast(
           <span className="text-base">
@@ -347,32 +320,17 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   }
 
   const totalAmount = sumBigIntStrings(parseAmounts(form.getValues("amounts")));
-  const shouldApprove = allowance !== null && allowance < totalAmount;
 
   return (
     <>
-      <AlertDialog open={showNetworkError} onOpenChange={setShowNetworkError}>
-        <AlertDialogContent className="border-primary">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-primary">
-              Network error
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              TSender contract not found for the connected network. Please
-              switch network!
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex justify-center">
-            <AlertDialogAction onClick={() => setShowNetworkError(false)}>
-              Close
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <NetworkErrorDialog
+        open={showNetworkError}
+        onOpenChange={setShowNetworkError}
+      />
 
       <Form {...form}>
         <form
-          onSubmit={form.handleSubmit(onSubmit)}
+          // onSubmit={form.handleSubmit((data) => {})} // onSubmit sera géré dans AllowanceChecker
           className={cn("space-y-8", className)}
           autoComplete="off"
           {...props}
@@ -434,20 +392,25 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
               </FormItem>
             )}
           />
+
           <div className="flex justify-center">
             <Button
               type="submit"
               disabled={
                 isPending ||
-                isAllowanceLoading ||
+                isLoading ||
+                !isReady ||
                 Object.keys(form.formState.errors).length > 0
               }
-              className="w-32 cursor-pointer"
+              className="w-36 cursor-pointer"
+              onClick={form.handleSubmit((data) => onSubmit(data, allowance))}
             >
-              {isPending || isAllowanceLoading ? (
+              {isPending || isLoading ? (
                 <LoaderCircle className="size-6 animate-[spin_2s_linear_infinite]" />
-              ) : shouldApprove ? (
+              ) : allowance !== null && allowance < totalAmount ? (
                 "Approve Tokens"
+              ) : allowance !== null && allowance >= totalAmount && isReady ? (
+                "Send Airdrop"
               ) : (
                 "Send Airdrop"
               )}
