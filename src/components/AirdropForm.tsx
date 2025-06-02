@@ -402,13 +402,13 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
                 !isReady ||
                 Object.keys(form.formState.errors).length > 0
               }
-              className="w-36 cursor-pointer"
+              className="w-58 cursor-pointer"
               onClick={form.handleSubmit((data) => onSubmit(data, allowance))}
             >
               {isPending || isLoading ? (
                 <LoaderCircle className="size-6 animate-[spin_2s_linear_infinite]" />
               ) : allowance !== null && allowance < totalAmount ? (
-                "Approve Tokens"
+                "Approve Tokens & Send Airdrop"
               ) : allowance !== null && allowance >= totalAmount && isReady ? (
                 "Send Airdrop"
               ) : (
