@@ -21,7 +21,7 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider>
+        <RainbowKitProvider coolMode={true}>
           {/* Only render children after client-side mounting */}
           {mounted ? children : null}
         </RainbowKitProvider>

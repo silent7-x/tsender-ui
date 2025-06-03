@@ -23,8 +23,15 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { isAddress, type Address } from "viem";
-import { useAccount, useChainId, useConfig, useWriteContract } from "wagmi";
+import { formatEther, isAddress, type Address } from "viem";
+import {
+  useAccount,
+  useChainId,
+  useConfig,
+  useReadContracts,
+  // useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 import { z } from "zod";
 
 type AirdropFormProps = ComponentPropsWithoutRef<"form">;
@@ -35,6 +42,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const account = useAccount();
   const tSenderAddress = chainsToTSender[chainId]?.tsender as Address;
   const [showNetworkError, setShowNetworkError] = useState<boolean>(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -45,6 +53,41 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     },
   });
 
+  const tokenAddress = form.watch("tokenAddress");
+  const amounts = form.watch("amounts");
+  const recipients = form.watch("recipients");
+  const formStateErrors = form.formState.errors;
+
+  const { data: tokenData } = useReadContracts({
+    contracts:
+      tokenAddress &&
+      account.address &&
+      isAddress(tokenAddress) &&
+      isAddress(account.address) &&
+      !!formStateErrors
+        ? [
+            {
+              abi: erc20Abi,
+              address: tokenAddress as `0x${string}`,
+              functionName: "decimals",
+            },
+            {
+              abi: erc20Abi,
+              address: tokenAddress as `0x${string}`,
+              functionName: "name",
+            },
+            {
+              abi: erc20Abi,
+              address: tokenAddress as `0x${string}`,
+              functionName: "balanceOf",
+              args: [account.address],
+            },
+          ]
+        : [],
+  });
+
+  console.log("tokenData", tokenData);
+
   const {
     allowance,
     isLoading,
@@ -53,10 +96,10 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   } = useAllowanceDebounced({
     tSenderAddress,
     accountAddress: account.address,
-    amounts: form.watch("amounts"),
-    recipients: form.watch("recipients"),
-    tokenAddress: form.watch("tokenAddress"),
-    formStateErrors: form.formState.errors,
+    amounts: amounts,
+    recipients: recipients,
+    tokenAddress: tokenAddress,
+    formStateErrors: formStateErrors,
     chainId,
     config,
     delay: 1000,
@@ -78,6 +121,14 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   }, [allowanceError]);
 
   const { isPending, writeContractAsync } = useWriteContract();
+  // const {
+  //   isLoading: isConfirming,
+  //   isSuccess: isConfirmed,
+  //   isError,
+  // } = useWaitForTransactionReceipt({
+  //   confirmations: 1,
+  //   hash,
+  // });
 
   useEffect(() => {
     if (!tSenderAddress || !isAddress(tSenderAddress)) {
@@ -330,7 +381,6 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
 
       <Form {...form}>
         <form
-          // onSubmit={form.handleSubmit((data) => {})} // onSubmit sera géré dans AllowanceChecker
           className={cn("space-y-8", className)}
           autoComplete="off"
           {...props}
@@ -392,6 +442,82 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
               </FormItem>
             )}
           />
+
+          {tokenAddress && account.address && tokenData ? (
+            <div className="mb-6 py-2 px-4 rounded-md border border-input bg-transparent text-sm text-muted-foreground dark:bg-input/30 shadow-xs">
+              {[0, 1, 2].some((i) => tokenData[i]?.status === "failure") ? (
+                <p className="text-destructive">
+                  Can't fetch data for this token on network with chain Id{" "}
+                  {chainId}!
+                </p>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex flex-row flex-wrap items-center">
+                    <span className="font-medium min-w-[130px]">Token:</span>
+                    {tokenData[1]?.result?.toString() ?? "N/A"}
+                  </div>
+                  <div className="flex flex-row items-center flex-wrap">
+                    <span className="font-medium min-w-[130px]">Decimals:</span>
+                    {tokenData[0]?.result?.toString() ?? "N/A"}
+                  </div>
+                  <div className="flex flex-row items-center flex-wrap">
+                    <span className="font-medium min-w-[130px]">Balance:</span>
+                    {tokenData[2]?.result
+                      ? formatEther(tokenData[2].result as bigint)
+                      : "N/A"}
+                  </div>
+                  <div className="flex flex-row items-center flex-wrap">
+                    <span className="font-medium min-w-[130px]">
+                      Balance (wei):
+                    </span>
+                    {tokenData[2]?.result?.toString() ?? "N/A"}
+                  </div>
+                  {amounts?.trim() && (
+                    <>
+                      <div className="flex flex-row items-center flex-wrap">
+                        <span className="font-medium min-w-[130px]">
+                          Total amount:
+                        </span>
+                        <span className="break-all">
+                          {formatEther(sumBigIntStrings(parseAmounts(amounts)))}
+                        </span>
+                      </div>
+                      <div className="flex flex-row items-center flex-wrap">
+                        <span className="font-medium min-w-[130px]">
+                          Total (wei):
+                        </span>
+                        <span className="break-all">
+                          {sumBigIntStrings(parseAmounts(amounts)).toString()}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            !formStateErrors.amounts &&
+            amounts?.trim() && (
+              <div className="mb-6 py-2 px-4 rounded-md border border-input bg-transparent text-sm text-muted-foreground dark:bg-input/30 shadow-xs">
+                <div className="space-y-1">
+                  <div className="flex flex-row items-center flex-wrap">
+                    <span className="font-medium min-w-[110px]">Total:</span>
+                    <span className="break-all">
+                      {formatEther(sumBigIntStrings(parseAmounts(amounts)))}
+                    </span>
+                  </div>
+                  <div className="flex flex-row items-center flex-wrap">
+                    <span className="font-medium min-w-[110px]">
+                      Total (wei):
+                    </span>
+                    <span className="break-all">
+                      {sumBigIntStrings(parseAmounts(amounts)).toString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          )}
 
           <div className="flex justify-center">
             <Button

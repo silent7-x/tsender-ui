@@ -16,11 +16,13 @@ export const Header = ({ title, className, ...props }: HeaderProps) => (
       <div className="flex items-center justify-center gap-2">
         <TicketsPlane className="size-10 text-[#ff8000] -mt-1.5" />
         <span className="text-foreground font-bold text-2xl">{title}</span>
+
         <a
           href="https://github.com/silent7-x/tsender-ui"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub"
+          className="hover:scale-110 transition-transform duration-200"
         >
           <FaGithub className="size-8 mx-2" />
         </a>
@@ -30,7 +32,11 @@ export const Header = ({ title, className, ...props }: HeaderProps) => (
       </div>
 
       <div className="flex items-center gap-4">
-        <ConnectButton />
+        <ConnectButton
+          showBalance={false}
+          chainStatus="icon"
+          label="Connect Wallet"
+        />
         <ModeToggle />
       </div>
     </Card>
