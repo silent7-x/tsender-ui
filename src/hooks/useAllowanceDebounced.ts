@@ -85,29 +85,3 @@ export function useAllowanceDebounced({
 
   return { allowance, isLoading, error, isReady };
 }
-// <div className="space-y-1">
-//                 <div className="flex flex-row items-center">
-//                   <span className="font-medium min-w-[110px]">Token :</span>
-//                   <span>{tokenData[1]?.result?.toString() ?? "N/A"}</span>
-//                 </div>
-//                 <div className="flex flex-row items-center">
-//                   <span className="font-medium min-w-[110px]">Decimals :</span>
-//                   <span>{tokenData[0]?.result?.toString() ?? "N/A"}</span>
-//                 </div>
-//                 <div className="flex flex-row items-center">
-//                   <span className="font-medium min-w-[110px]">Balance :</span>
-//                   <span>
-//                     {tokenData[2]?.result
-//                       ? formatEther(tokenData[2].result as bigint)
-//                       : "N/A"}
-//                   </span>
-//                 </div>
-//                 <div className="flex flex-row items-center">
-//                   <span className="font-medium min-w-[110px]">
-//                     Balance in wei :
-//                   </span>
-//                   <span>{tokenData[2]?.result?.toString() ?? "N/A"}</span>
-//                 </div>
-//               </div>
-
-// <div className="mb-6 py-2 px-4 rounded-md  border border-input bg-transparent text-sm text-muted-foreground dark:bg-input/30 shadow-xs">

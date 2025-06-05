@@ -1,4 +1,5 @@
 import { NetworkErrorDialog } from "@/components/NetworkErrorDialog";
+import { TokenInfos, type TokenDataItem } from "@/components/TokenInfos";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -12,7 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { chainsToTSender, erc20Abi, tsenderAbi } from "@/constants";
-import { useAllowanceDebounced } from "@/hooks/useAllowanceDebounced";
 import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
 import { cn } from "@/lib/utils";
 import { getTokenBalance } from "@/lib/utils/balance";
@@ -23,13 +23,13 @@ import { LoaderCircle } from "lucide-react";
 import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { formatEther, isAddress, type Address } from "viem";
+import { isAddress, type Address } from "viem";
 import {
   useAccount,
   useChainId,
   useConfig,
   useReadContracts,
-  // useWaitForTransactionReceipt,
+  useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 import { z } from "zod";
@@ -53,6 +53,8 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     },
   });
 
+  console.log("formStateErrors", form.formState.errors);
+
   const tokenAddress = form.watch("tokenAddress");
   const amounts = form.watch("amounts");
   const recipients = form.watch("recipients");
@@ -68,67 +70,78 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
         ? [
             {
               abi: erc20Abi,
-              address: tokenAddress as `0x${string}`,
+              address: tokenAddress as Address,
               functionName: "decimals",
             },
             {
               abi: erc20Abi,
-              address: tokenAddress as `0x${string}`,
+              address: tokenAddress as Address,
               functionName: "name",
             },
             {
               abi: erc20Abi,
-              address: tokenAddress as `0x${string}`,
+              address: tokenAddress as Address,
               functionName: "balanceOf",
               args: [account.address],
+            },
+            {
+              abi: erc20Abi,
+              address: tokenAddress as Address,
+              functionName: "allowance",
+              args: [account.address, tSenderAddress],
             },
           ]
         : [],
   });
 
-  console.log("tokenData", tokenData);
+  const allowance =
+    typeof tokenData?.[3]?.result === "bigint"
+      ? (tokenData[3].result as bigint)
+      : null;
 
-  const {
-    allowance,
-    isLoading,
-    isReady,
-    error: allowanceError,
-  } = useAllowanceDebounced({
-    tSenderAddress,
-    accountAddress: account.address,
-    amounts: amounts,
-    recipients: recipients,
-    tokenAddress: tokenAddress,
-    formStateErrors: formStateErrors,
-    chainId,
-    config,
-    delay: 1000,
-  });
+  console.log("allowance", allowance);
 
-  useEffect(() => {
-    if (allowanceError) {
-      toast(
-        <span className="text-destructive text-base font-bold">Error</span>,
-        {
-          description: (
-            <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-              {allowanceError}
-            </pre>
-          ),
-        }
-      );
-    }
-  }, [allowanceError]);
-
-  const { isPending, writeContractAsync } = useWriteContract();
   // const {
-  //   isLoading: isConfirming,
-  //   isSuccess: isConfirmed,
-  //   isError,
-  // } = useWaitForTransactionReceipt({
-  //   confirmations: 1,
-  //   hash,
+  //   allowance,
+  //   isLoading,
+  //   isReady,
+  //   error: allowanceError,
+  // } = useAllowanceDebounced({
+  //   tSenderAddress,
+  //   accountAddress: account.address,
+  //   amounts: amounts,
+  //   recipients: recipients,
+  //   tokenAddress: tokenAddress,
+  //   formStateErrors: formStateErrors,
+  //   chainId,
+  //   config,
+  //   delay: 1000,
   // });
+
+  // useEffect(() => {
+  //   if (allowanceError) {
+  //     toast(
+  //       <span className="text-destructive text-base font-bold">Error</span>,
+  //       {
+  //         description: (
+  //           <pre className="break-all whitespace-pre-wrap text-muted-foreground">
+  //             {allowanceError}
+  //           </pre>
+  //         ),
+  //       }
+  //     );
+  //   }
+  // }, [allowanceError]);
+
+  const { data: hash, isPending, writeContractAsync } = useWriteContract();
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    isError,
+  } = useWaitForTransactionReceipt({
+    confirmations: 1,
+    hash,
+  });
 
   useEffect(() => {
     if (!tSenderAddress || !isAddress(tSenderAddress)) {
@@ -443,80 +456,17 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
             )}
           />
 
-          {tokenAddress && account.address && tokenData ? (
-            <div className="mb-6 py-2 px-4 rounded-md border border-input bg-transparent text-sm text-muted-foreground dark:bg-input/30 shadow-xs">
-              {[0, 1, 2].some((i) => tokenData[i]?.status === "failure") ? (
-                <p className="text-destructive">
-                  Can't fetch data for this token on network with chain Id{" "}
-                  {chainId}!
-                </p>
-              ) : (
-                <div className="space-y-1">
-                  <div className="flex flex-row flex-wrap items-center">
-                    <span className="font-medium min-w-[130px]">Token:</span>
-                    {tokenData[1]?.result?.toString() ?? "N/A"}
-                  </div>
-                  <div className="flex flex-row items-center flex-wrap">
-                    <span className="font-medium min-w-[130px]">Decimals:</span>
-                    {tokenData[0]?.result?.toString() ?? "N/A"}
-                  </div>
-                  <div className="flex flex-row items-center flex-wrap">
-                    <span className="font-medium min-w-[130px]">Balance:</span>
-                    {tokenData[2]?.result
-                      ? formatEther(tokenData[2].result as bigint)
-                      : "N/A"}
-                  </div>
-                  <div className="flex flex-row items-center flex-wrap">
-                    <span className="font-medium min-w-[130px]">
-                      Balance (wei):
-                    </span>
-                    {tokenData[2]?.result?.toString() ?? "N/A"}
-                  </div>
-                  {amounts?.trim() && (
-                    <>
-                      <div className="flex flex-row items-center flex-wrap">
-                        <span className="font-medium min-w-[130px]">
-                          Total amount:
-                        </span>
-                        <span className="break-all">
-                          {formatEther(sumBigIntStrings(parseAmounts(amounts)))}
-                        </span>
-                      </div>
-                      <div className="flex flex-row items-center flex-wrap">
-                        <span className="font-medium min-w-[130px]">
-                          Total (wei):
-                        </span>
-                        <span className="break-all">
-                          {sumBigIntStrings(parseAmounts(amounts)).toString()}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            !formStateErrors.amounts &&
-            amounts?.trim() && (
-              <div className="mb-6 py-2 px-4 rounded-md border border-input bg-transparent text-sm text-muted-foreground dark:bg-input/30 shadow-xs">
-                <div className="space-y-1">
-                  <div className="flex flex-row items-center flex-wrap">
-                    <span className="font-medium min-w-[110px]">Total:</span>
-                    <span className="break-all">
-                      {formatEther(sumBigIntStrings(parseAmounts(amounts)))}
-                    </span>
-                  </div>
-                  <div className="flex flex-row items-center flex-wrap">
-                    <span className="font-medium min-w-[110px]">
-                      Total (wei):
-                    </span>
-                    <span className="break-all">
-                      {sumBigIntStrings(parseAmounts(amounts)).toString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )
+          {tokenAddress && account.address && (
+            <TokenInfos
+              tokenData={
+                tokenData ? ([...tokenData] as TokenDataItem[]) : undefined
+              }
+              allowance={allowance}
+              amounts={amounts}
+              formStateErrors={formStateErrors}
+              chainId={chainId}
+              tokenAddress={tokenAddress as Address}
+            />
           )}
 
           <div className="flex justify-center">
@@ -524,18 +474,20 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
               type="submit"
               disabled={
                 isPending ||
-                isLoading ||
-                !isReady ||
+                // isLoading ||
+                // !isReady ||
                 Object.keys(form.formState.errors).length > 0
               }
               className="w-58 cursor-pointer"
               onClick={form.handleSubmit((data) => onSubmit(data, allowance))}
             >
-              {isPending || isLoading ? (
+              {isPending ? (
+                // || isLoading
                 <LoaderCircle className="size-6 animate-[spin_2s_linear_infinite]" />
               ) : allowance !== null && allowance < totalAmount ? (
                 "Approve Tokens & Send Airdrop"
-              ) : allowance !== null && allowance >= totalAmount && isReady ? (
+              ) : allowance !== null && allowance >= totalAmount ? (
+                // && isReady
                 "Send Airdrop"
               ) : (
                 "Send Airdrop"
