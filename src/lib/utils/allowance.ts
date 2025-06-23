@@ -2,11 +2,11 @@ import { readContract } from "@wagmi/core";
 import { erc20Abi, type Address } from "viem";
 import type { Config } from "wagmi";
 
-export async function getApprovedAmount(
+export async function getTokenAllowance(
   config: Config,
-  spenderAddress: Address,
   erc20TokenAddress: Address,
-  ownerAddress: Address
+  ownerAddress: Address,
+  spenderAddress: Address
 ): Promise<bigint> {
   try {
     const allowance = await readContract(config, {

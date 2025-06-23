@@ -15,7 +15,7 @@ export async function getTokenBalance(
       args: [accountAddress],
     });
     return balance as bigint;
-  } catch {
-    return 0n;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : String(error));
   }
 }

@@ -12,7 +12,6 @@ export type TokenDataItem = {
 
 type TokenInfosProps = ComponentPropsWithoutRef<"div"> & {
   tokenData: TokenDataItem[] | undefined;
-  allowance: bigint | null;
   amounts: string;
   formStateErrors: FieldErrors<{
     amounts: string;
@@ -51,13 +50,13 @@ export const TokenInfos = ({
   tokenData,
   amounts,
   formStateErrors,
-  allowance,
   chainId,
   tokenAddress,
 }: TokenInfosProps) => {
   const tokenName = (tokenData?.[1]?.result as string | null) ?? null;
   const tokenDecimals = tokenData?.[0]?.result?.toString() ?? null;
-  const tokenBalance = tokenData?.[2]?.result?.toString() ?? null;
+  const tokenBalance = tokenData?.[2]?.result ?? null;
+  const tokenAllowance = tokenData?.[3]?.result ?? null;
 
   const renderTotalAmount = () => (
     <>
@@ -129,11 +128,11 @@ export const TokenInfos = ({
           v.toString()
         )}
         {/* Allowance */}
-        {renderField("Allowance", allowance, tokenData?.[3], (v) =>
+        {renderField("Allowance", tokenAllowance, tokenData?.[3], (v) =>
           formatEther(BigInt(v))
         )}
         {/* Allowance (wei) */}
-        {renderField("Allowance (wei)", allowance, tokenData?.[3], (v) =>
+        {renderField("Allowance (wei)", tokenAllowance, tokenData?.[3], (v) =>
           v.toString()
         )}
         {/* Total */}

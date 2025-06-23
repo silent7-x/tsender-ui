@@ -1,6 +1,7 @@
+import { AirdropButton } from "@/components/AirdropButton";
+import { ApprovalButton } from "@/components/ApprovalButton";
 import { NetworkErrorDialog } from "@/components/NetworkErrorDialog";
 import { TokenInfos, type TokenDataItem } from "@/components/TokenInfos";
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -12,26 +13,18 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { chainsToTSender, erc20Abi, tsenderAbi } from "@/constants";
-import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
+import { chainsToTSender, erc20Abi } from "@/constants";
+import { formSchema } from "@/lib/schemas/airdrop";
 import { cn } from "@/lib/utils";
+import { getTokenAllowance } from "@/lib/utils/allowance";
 import { getTokenBalance } from "@/lib/utils/balance";
 import { parseAmounts, sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { waitForTransactionReceipt } from "@wagmi/core";
-import { LoaderCircle } from "lucide-react";
 import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { isAddress, type Address } from "viem";
-import {
-  useAccount,
-  useChainId,
-  useConfig,
-  useReadContracts,
-  useWaitForTransactionReceipt,
-  useWriteContract,
-} from "wagmi";
+import { useAccount, useChainId, useConfig, useReadContracts } from "wagmi";
 import { z } from "zod";
 
 type AirdropFormProps = ComponentPropsWithoutRef<"form">;
@@ -41,6 +34,8 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const config = useConfig();
   const account = useAccount();
   const tSenderAddress = chainsToTSender[chainId]?.tsender as Address;
+  const [allowance, setAllowance] = useState<bigint | null>(null);
+  const [balance, setBalance] = useState<bigint | null>(null);
   const [showNetworkError, setShowNetworkError] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -53,11 +48,8 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     },
   });
 
-  console.log("formStateErrors", form.formState.errors);
-
   const tokenAddress = form.watch("tokenAddress");
   const amounts = form.watch("amounts");
-  const recipients = form.watch("recipients");
   const formStateErrors = form.formState.errors;
 
   const { data: tokenData } = useReadContracts({
@@ -94,54 +86,14 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
         : [],
   });
 
-  const allowance =
-    typeof tokenData?.[3]?.result === "bigint"
-      ? (tokenData[3].result as bigint)
-      : null;
-
-  console.log("allowance", allowance);
-
-  // const {
-  //   allowance,
-  //   isLoading,
-  //   isReady,
-  //   error: allowanceError,
-  // } = useAllowanceDebounced({
-  //   tSenderAddress,
-  //   accountAddress: account.address,
-  //   amounts: amounts,
-  //   recipients: recipients,
-  //   tokenAddress: tokenAddress,
-  //   formStateErrors: formStateErrors,
-  //   chainId,
-  //   config,
-  //   delay: 1000,
-  // });
-
-  // useEffect(() => {
-  //   if (allowanceError) {
-  //     toast(
-  //       <span className="text-destructive text-base font-bold">Error</span>,
-  //       {
-  //         description: (
-  //           <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-  //             {allowanceError}
-  //           </pre>
-  //         ),
-  //       }
-  //     );
-  //   }
-  // }, [allowanceError]);
-
-  const { data: hash, isPending, writeContractAsync } = useWriteContract();
-  const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    isError,
-  } = useWaitForTransactionReceipt({
-    confirmations: 1,
-    hash,
-  });
+  useEffect(() => {
+    if (typeof tokenData?.[2]?.result === "bigint") {
+      setBalance(tokenData[2].result as bigint);
+    }
+    if (typeof tokenData?.[3]?.result === "bigint") {
+      setAllowance(tokenData[3].result as bigint);
+    }
+  }, [tokenData]);
 
   useEffect(() => {
     if (!tSenderAddress || !isAddress(tSenderAddress)) {
@@ -149,229 +101,28 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     }
   }, [chainId, tSenderAddress]);
 
-  async function onSubmit(
-    data: z.infer<typeof formSchema>,
-    allowance: bigint | null
-  ) {
-    const result = submitSchema.safeParse(data);
-    if (!result.success) {
-      toast(
-        <span className="text-destructive text-base font-bold">Error</span>,
-        {
-          description: (
-            <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-              {result.error.errors.map((e, i) => (
-                <p key={i}>{e.message}</p>
-              ))}
-            </pre>
-          ),
-        }
-      );
-      return;
-    }
-    if (!account.address) {
-      toast(
-        <span className="text-destructive text-base font-bold">Error</span>,
-        {
-          description: (
-            <pre className="text-muted-foreground">
-              Please connect your wallet!
-            </pre>
-          ),
-        }
-      );
-      return;
-    }
-
-    const tokenAddress = result.data.tokenAddress;
-
-    if (!tSenderAddress || !isAddress(tSenderAddress)) {
-      setShowNetworkError(true);
-      return;
-    }
-
-    if (!tokenAddress || !isAddress(tokenAddress)) {
-      toast(
-        <span className="text-destructive text-base font-bold">Error</span>,
-        {
-          description: (
-            <pre className="text-muted-foreground">
-              Please enter a valid ERC20 token address!
-            </pre>
-          ),
-        }
-      );
-      return;
-    }
-
-    const amounts = result.data.amounts;
-    const totalAmount = sumBigIntStrings(amounts);
-    const recipients = result.data.recipients;
-
+  const refreshTokenState = async () => {
+    if (!tokenAddress || !account.address || !tSenderAddress) return;
     try {
-      const approvedAmount = allowance ?? 0n;
-
-      if (approvedAmount < totalAmount) {
-        try {
-          const balance = await getTokenBalance(
-            config,
-            tokenAddress,
-            account.address
-          );
-
-          if (balance < totalAmount) {
-            toast(
-              <span className="text-destructive text-base font-bold">
-                Error
-              </span>,
-              {
-                description: (
-                  <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                    Insufficient token balance! You need {totalAmount} tokens in
-                    wei!
-                  </pre>
-                ),
-              }
-            );
-            return;
-          }
-
-          const approvalHash = await writeContractAsync({
-            abi: erc20Abi,
-            address: tokenAddress,
-            functionName: "approve",
-            args: [tSenderAddress, totalAmount],
-          });
-
-          toast(
-            <span className="text-base">
-              Approval transaction sent with hash:
-            </span>,
-            {
-              description: (
-                <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                  {approvalHash}
-                </pre>
-              ),
-            }
-          );
-
-          const approvalReceipt = await waitForTransactionReceipt(config, {
-            hash: approvalHash,
-          });
-
-          toast.success(
-            <span className="text-base">Approval successful</span>,
-            {
-              description: (
-                <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                  <p>Transaction hash:</p>
-                  <p>{approvalReceipt.transactionHash}</p>
-                </pre>
-              ),
-            }
-          );
-
-          const airdropTransactionHash = await writeContractAsync({
-            abi: tsenderAbi,
-            address: tSenderAddress,
-            functionName: "airdropERC20",
-            args: [tokenAddress, recipients, amounts, totalAmount],
-          });
-
-          toast(
-            <span className="text-base">
-              Airdrop transaction sent with hash:
-            </span>,
-            {
-              description: (
-                <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                  <p>{airdropTransactionHash}</p>
-                </pre>
-              ),
-            }
-          );
-
-          const airdropTransactionReceipt = await waitForTransactionReceipt(
-            config,
-            {
-              hash: airdropTransactionHash,
-            }
-          );
-
-          toast.success(<span className="text-base">Airdrop successful</span>, {
-            description: (
-              <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                <p>Transaction hash:</p>
-                <p>{airdropTransactionReceipt.transactionHash}</p>
-              </pre>
-            ),
-          });
-        } catch (err) {
-          throw new Error(err instanceof Error ? err.message : String(err));
-        }
-      } else {
-        const balance = await getTokenBalance(
+      const [newAllowance, newBalance] = await Promise.all([
+        getTokenAllowance(
           config,
-          tokenAddress,
-          account.address
-        );
+          tokenAddress as Address,
+          account.address,
+          tSenderAddress
+        ),
+        getTokenBalance(config, tokenAddress as Address, account.address),
+      ]);
 
-        if (balance < totalAmount) {
-          toast(
-            <span className="text-destructive text-base font-bold">Error</span>,
-            {
-              description: (
-                <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                  Insufficient token balance! You need {totalAmount} tokens in
-                  wei!
-                </pre>
-              ),
-            }
-          );
-          return;
-        }
-
-        const airdropTransactionHash = await writeContractAsync({
-          abi: tsenderAbi,
-          address: tSenderAddress,
-          functionName: "airdropERC20",
-          args: [tokenAddress, recipients, amounts, totalAmount],
-        });
-
-        toast(
-          <span className="text-base">
-            Airdrop transaction sent with hash:
-          </span>,
-          {
-            description: (
-              <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-                <p>{airdropTransactionHash}</p>
-              </pre>
-            ),
-          }
-        );
-
-        const airdropTransactionReceipt = await waitForTransactionReceipt(
-          config,
-          {
-            hash: airdropTransactionHash,
-          }
-        );
-
-        toast.success(<span className="text-base">Airdrop successful</span>, {
-          description: (
-            <pre className="break-all whitespace-pre-wrap text-muted-foreground">
-              <p>Transaction hash:</p>
-              <p>{airdropTransactionReceipt.transactionHash}</p>
-            </pre>
-          ),
-        });
-      }
+      setAllowance(newAllowance);
+      setBalance(newBalance);
     } catch (err) {
       console.error(err);
+
       toast(
-        <span className="text-destructive text-base font-bold">Error</span>,
+        <span className="text-destructive text-base font-bold">
+          Error Fetching Token Data
+        </span>,
         {
           description: (
             <pre className="break-all whitespace-pre-wrap text-muted-foreground">
@@ -381,6 +132,30 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
         }
       );
     }
+  };
+
+  const displayAllowance =
+    allowance ??
+    (typeof tokenData?.[3]?.result === "bigint"
+      ? (tokenData[3].result as bigint)
+      : null);
+  const displayBalance =
+    balance ??
+    (typeof tokenData?.[2]?.result === "bigint"
+      ? (tokenData[2].result as bigint)
+      : null);
+
+  const enhancedTokenData = tokenData
+    ? ([...tokenData] as TokenDataItem[])
+    : undefined;
+  if (enhancedTokenData && displayAllowance !== null) {
+    enhancedTokenData[3] = {
+      ...enhancedTokenData[3],
+      result: displayAllowance,
+    };
+  }
+  if (enhancedTokenData && displayBalance !== null) {
+    enhancedTokenData[2] = { ...enhancedTokenData[2], result: displayBalance };
   }
 
   const totalAmount = sumBigIntStrings(parseAmounts(form.getValues("amounts")));
@@ -425,6 +200,12 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
                     placeholder="one address per line or comma-separated"
                     spellCheck={false}
                     {...field}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      if (form.getValues("amounts")) {
+                        form.trigger(["recipients", "amounts"]);
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormDescription className="pl-4 text-xs">
@@ -445,6 +226,12 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
                   <Textarea
                     placeholder="amounts in wei, one per line or comma-separated"
                     {...field}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      if (form.getValues("recipients")) {
+                        form.trigger(["recipients", "amounts"]);
+                      }
+                    }}
                   />
                 </FormControl>
                 <FormDescription className="pl-4 text-xs">
@@ -458,10 +245,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
 
           {tokenAddress && account.address && (
             <TokenInfos
-              tokenData={
-                tokenData ? ([...tokenData] as TokenDataItem[]) : undefined
-              }
-              allowance={allowance}
+              tokenData={enhancedTokenData}
               amounts={amounts}
               formStateErrors={formStateErrors}
               chainId={chainId}
@@ -470,29 +254,29 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
           )}
 
           <div className="flex justify-center">
-            <Button
-              type="submit"
-              disabled={
-                isPending ||
-                // isLoading ||
-                // !isReady ||
-                Object.keys(form.formState.errors).length > 0
-              }
-              className="w-58 cursor-pointer"
-              onClick={form.handleSubmit((data) => onSubmit(data, allowance))}
-            >
-              {isPending ? (
-                // || isLoading
-                <LoaderCircle className="size-6 animate-[spin_2s_linear_infinite]" />
-              ) : allowance !== null && allowance < totalAmount ? (
-                "Approve Tokens & Send Airdrop"
-              ) : allowance !== null && allowance >= totalAmount ? (
-                // && isReady
-                "Send Airdrop"
-              ) : (
-                "Send Airdrop"
-              )}
-            </Button>
+            {displayAllowance !== null && displayAllowance < totalAmount && (
+              <ApprovalButton
+                config={config}
+                accountAddress={account.address}
+                tSenderAddress={tSenderAddress}
+                formData={form.getValues()}
+                setShowNetworkError={setShowNetworkError}
+                disabled={Object.keys(form.formState.errors).length > 0}
+                onAfterAction={refreshTokenState}
+              />
+            )}
+
+            {displayAllowance !== null && displayAllowance >= totalAmount && (
+              <AirdropButton
+                config={config}
+                accountAddress={account.address}
+                tSenderAddress={tSenderAddress}
+                formData={form.getValues()}
+                setShowNetworkError={setShowNetworkError}
+                disabled={Object.keys(form.formState.errors).length > 0}
+                onAfterAction={refreshTokenState}
+              />
+            )}
           </div>
         </form>
       </Form>
