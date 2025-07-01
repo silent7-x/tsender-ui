@@ -4,8 +4,11 @@ import { Toaster } from "@/components/ui/sonner";
 import "@/index.css";
 import { Web3Provider } from "@/provider.tsx";
 import "@rainbow-me/rainbowkit/styles.css";
+import { inject } from "@vercel/analytics";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+
+inject();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
