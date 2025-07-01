@@ -202,9 +202,6 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     !form.getValues("amounts");
   const isFormInvalid = Object.keys(form.formState.errors).length > 0;
   const shouldDisableButton = isFormIncomplete || isFormInvalid;
-  console.log("shouldDisabled Buton", shouldDisableButton);
-  console.log("displayAllowance", displayAllowance);
-  console.log("displaybalance", displayBalance);
 
   return (
     <>
