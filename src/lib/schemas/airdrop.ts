@@ -67,25 +67,41 @@ export const formSchema = z
     }
   });
 
-export const submitSchema = z.object({
-  tokenAddress: z
-    .string()
-    .min(1, "Token address is required")
-    .refine((val) => !val || isAddress(val), {
-      message: "Invalid Ethereum address",
-    }),
-  recipients: z
-    .string()
-    .min(1, "At least one recipient is required")
-    .transform(parseRecipients)
-    .refine((arr) => arr.length === 0 || areAllValidAddresses(arr), {
-      message: "All recipients must be valid Ethereum addresses",
-    }),
-  amounts: z
-    .string()
-    .min(1, "At least one amount is required")
-    .transform(parseAmounts)
-    .refine((arr) => arr.length === 0 || areAllPositiveBigInts(arr), {
-      message: "All amounts must be positive integers",
-    }),
-});
+export const submitSchema = z
+  .object({
+    tokenAddress: z
+      .string()
+      .min(1, "Token address is required")
+      .refine((val) => !val || isAddress(val), {
+        message: "Invalid Ethereum address",
+      }),
+    recipients: z
+      .string()
+      .min(1, "At least one recipient is required")
+      .transform(parseRecipients)
+      .refine((arr) => arr.length === 0 || areAllValidAddresses(arr), {
+        message: "All recipients must be valid Ethereum addresses",
+      }),
+    amounts: z
+      .string()
+      .min(1, "At least one amount is required")
+      .transform(parseAmounts)
+      .refine((arr) => arr.length === 0 || areAllPositiveBigInts(arr), {
+        message: "All amounts must be positive integers",
+      }),
+  })
+  .superRefine((data, ctx) => {
+    const recipientsArr = Array.isArray(data.recipients) ? data.recipients : [];
+    const amountsArr = Array.isArray(data.amounts) ? data.amounts : [];
+    if (
+      recipientsArr.length > 0 &&
+      amountsArr.length > 0 &&
+      recipientsArr.length !== amountsArr.length
+    ) {
+      ctx.addIssue({
+        path: ["amounts"],
+        code: z.ZodIssueCode.custom,
+        message: "Recipients and amounts count must match",
+      });
+    }
+  });

@@ -4,7 +4,7 @@ import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
 import { getTokenBalance } from "@/lib/utils/balance";
 import { sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { LoaderCircle } from "lucide-react";
-import { useEffect, type ComponentPropsWithoutRef } from "react";
+import { useEffect, useRef, type ComponentPropsWithoutRef } from "react";
 import { toast } from "sonner";
 import { isAddress, type Address } from "viem";
 import {
@@ -33,16 +33,45 @@ export const AirdropButton = ({
   disabled,
   onAfterAction,
 }: AirdropButtonProps) => {
-  const { data: hash, isPending, writeContractAsync } = useWriteContract();
+  const onAfterActionRef = useRef(onAfterAction);
+  onAfterActionRef.current = onAfterAction;
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } =
-    useWaitForTransactionReceipt({
-      confirmations: 1,
-      hash,
-    });
+  const hasShownToastRef = useRef({
+    sent: false,
+    success: false,
+    error: false,
+  });
+
+  const {
+    data: hash,
+    isPending,
+    isSuccess: isTransactionSent,
+    writeContractAsync,
+  } = useWriteContract();
+
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    isError: isErrorConfirming,
+    error: errorConfirming,
+  } = useWaitForTransactionReceipt({
+    confirmations: 1,
+    hash,
+  });
 
   useEffect(() => {
-    if (hash && isConfirming) {
+    if (hash) {
+      hasShownToastRef.current = {
+        sent: false,
+        success: false,
+        error: false,
+      };
+    }
+  }, [hash]);
+
+  useEffect(() => {
+    if (hash && isTransactionSent && !hasShownToastRef.current.sent) {
+      hasShownToastRef.current.sent = true;
       toast(
         <span className="text-base">Airdrop transaction sent with hash:</span>,
         {
@@ -55,7 +84,8 @@ export const AirdropButton = ({
       );
     }
 
-    if (isConfirmed) {
+    if (isConfirmed && !hasShownToastRef.current.success) {
+      hasShownToastRef.current.success = true;
       toast.success(<span className="text-base">Airdrop successful</span>, {
         description: (
           <pre className="break-all whitespace-pre-wrap text-muted-foreground">
@@ -65,9 +95,35 @@ export const AirdropButton = ({
         ),
       });
 
-      onAfterAction?.();
+      onAfterActionRef.current?.();
     }
-  }, [hash, isConfirmed, isConfirming, onAfterAction]);
+
+    if (
+      isErrorConfirming &&
+      errorConfirming &&
+      !hasShownToastRef.current.error
+    ) {
+      hasShownToastRef.current.error = true;
+      toast(
+        <span className="text-destructive text-base font-bold">
+          Transaction failed
+        </span>,
+        {
+          description: (
+            <pre className="break-all whitespace-pre-wrap text-muted-foreground">
+              {errorConfirming.message}
+            </pre>
+          ),
+        }
+      );
+    }
+  }, [
+    hash,
+    isConfirmed,
+    isTransactionSent,
+    isErrorConfirming,
+    errorConfirming,
+  ]);
 
   const handleAirdrop = async (data: z.infer<typeof formSchema>) => {
     const result = submitSchema.safeParse(data);

@@ -1,5 +1,5 @@
 import type { formSchema } from "@/lib/schemas/airdrop";
-import { getApprovedAmount } from "@/lib/utils/allowance";
+import { getTokenAllowance } from "@/lib/utils/allowance";
 import type { Config } from "@wagmi/core";
 import { useEffect, useState } from "react";
 import type { FieldErrors } from "react-hook-form";
@@ -48,7 +48,7 @@ export function useAllowanceDebounced({
   const checkAllowance = useDebouncedCallback(async () => {
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      const approvedAmount = await getApprovedAmount(
+      const approvedAmount = await getTokenAllowance(
         config,
         tSenderAddress as Address,
         tokenAddress as Address,

@@ -20,14 +20,26 @@ import { getTokenAllowance } from "@/lib/utils/allowance";
 import { getTokenBalance } from "@/lib/utils/balance";
 import { parseAmounts, sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { useDebouncedCallback } from "use-debounce";
 import { isAddress, type Address } from "viem";
 import { useAccount, useChainId, useConfig, useReadContracts } from "wagmi";
 import { z } from "zod";
 
 type AirdropFormProps = ComponentPropsWithoutRef<"form">;
+
+const STORAGE_KEY = "tsender-airdrop-form";
+
+const saved =
+  typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+const parsed = saved ? JSON.parse(saved) : null;
 
 export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const chainId = useChainId();
@@ -41,7 +53,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
-    defaultValues: {
+    defaultValues: parsed || {
       tokenAddress: "",
       recipients: "",
       amounts: "",
@@ -101,6 +113,30 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
     }
   }, [chainId, tSenderAddress]);
 
+  const hasTriggeredParsed = useRef(false);
+
+  useEffect(() => {
+    if (
+      !hasTriggeredParsed.current &&
+      parsed &&
+      Object.values(parsed).some((v) => String(v).trim() !== "")
+    ) {
+      hasTriggeredParsed.current = true;
+      form.trigger();
+    }
+  }, [form]);
+
+  const debouncedSaveToStorage = useDebouncedCallback((values) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+  }, 500);
+
+  useEffect(() => {
+    const sub = form.watch((values) => {
+      debouncedSaveToStorage(values);
+    });
+    return () => sub.unsubscribe();
+  }, [form, debouncedSaveToStorage]);
+
   const refreshTokenState = async () => {
     if (!tokenAddress || !account.address || !tSenderAddress) return;
     try {
@@ -159,6 +195,16 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
   }
 
   const totalAmount = sumBigIntStrings(parseAmounts(form.getValues("amounts")));
+
+  const isFormIncomplete =
+    !form.getValues("tokenAddress") ||
+    !form.getValues("recipients") ||
+    !form.getValues("amounts");
+  const isFormInvalid = Object.keys(form.formState.errors).length > 0;
+  const shouldDisableButton = isFormIncomplete || isFormInvalid;
+  console.log("shouldDisabled Buton", shouldDisableButton);
+  console.log("displayAllowance", displayAllowance);
+  console.log("displaybalance", displayBalance);
 
   return (
     <>
@@ -254,28 +300,31 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
           )}
 
           <div className="flex justify-center">
-            {displayAllowance !== null && displayAllowance < totalAmount && (
-              <ApprovalButton
-                config={config}
-                accountAddress={account.address}
-                tSenderAddress={tSenderAddress}
-                formData={form.getValues()}
-                setShowNetworkError={setShowNetworkError}
-                disabled={Object.keys(form.formState.errors).length > 0}
-                onAfterAction={refreshTokenState}
-              />
-            )}
-
-            {displayAllowance !== null && displayAllowance >= totalAmount && (
-              <AirdropButton
-                config={config}
-                accountAddress={account.address}
-                tSenderAddress={tSenderAddress}
-                formData={form.getValues()}
-                setShowNetworkError={setShowNetworkError}
-                disabled={Object.keys(form.formState.errors).length > 0}
-                onAfterAction={refreshTokenState}
-              />
+            {account.isConnected && (
+              <>
+                {displayAllowance !== null &&
+                displayAllowance < BigInt(totalAmount) ? (
+                  <ApprovalButton
+                    config={config}
+                    accountAddress={account.address}
+                    tSenderAddress={tSenderAddress}
+                    formData={form.getValues()}
+                    setShowNetworkError={setShowNetworkError}
+                    disabled={shouldDisableButton}
+                    onAfterAction={refreshTokenState}
+                  />
+                ) : (
+                  <AirdropButton
+                    config={config}
+                    accountAddress={account.address}
+                    tSenderAddress={tSenderAddress}
+                    formData={form.getValues()}
+                    setShowNetworkError={setShowNetworkError}
+                    disabled={shouldDisableButton}
+                    onAfterAction={refreshTokenState}
+                  />
+                )}
+              </>
             )}
           </div>
         </form>
