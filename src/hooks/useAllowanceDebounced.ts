@@ -47,7 +47,6 @@ export function useAllowanceDebounced({
 
   const checkAllowance = useDebouncedCallback(async () => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
       const approvedAmount = await getTokenAllowance(
         config,
         tSenderAddress as Address,
