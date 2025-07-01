@@ -2,7 +2,7 @@ import { parseAmounts, sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { useEffect, type ComponentPropsWithoutRef } from "react";
 import type { FieldErrors } from "react-hook-form";
 import { toast } from "sonner";
-import { formatEther, type Address } from "viem";
+import { formatUnits, type Address } from "viem";
 
 export type TokenDataItem = {
   status?: string;
@@ -55,6 +55,7 @@ export const TokenInfos = ({
 }: TokenInfosProps) => {
   const tokenName = (tokenData?.[1]?.result as string | null) ?? null;
   const tokenDecimals = tokenData?.[0]?.result?.toString() ?? null;
+  const decimals = tokenDecimals ? Number(tokenDecimals) : 18;
   const tokenBalance = tokenData?.[2]?.result ?? null;
   const tokenAllowance = tokenData?.[3]?.result ?? null;
 
@@ -63,7 +64,7 @@ export const TokenInfos = ({
       <div className="flex flex-row items-center flex-wrap">
         <span className="font-medium min-w-[130px]">Total amount:</span>
         <span className="break-all">
-          {formatEther(sumBigIntStrings(parseAmounts(amounts)))}
+          {formatUnits(sumBigIntStrings(parseAmounts(amounts)), decimals)}
         </span>
       </div>
       <div className="flex flex-row items-center flex-wrap">
@@ -121,7 +122,7 @@ export const TokenInfos = ({
         {renderField("Decimals", tokenDecimals, tokenData?.[0])}
         {/* Balance */}
         {renderField("Balance", tokenBalance, tokenData?.[2], (v) =>
-          formatEther(BigInt(v))
+          formatUnits(BigInt(v), decimals)
         )}
         {/* Balance (wei) */}
         {renderField("Balance (wei)", tokenBalance, tokenData?.[2], (v) =>
@@ -129,7 +130,7 @@ export const TokenInfos = ({
         )}
         {/* Allowance */}
         {renderField("Allowance", tokenAllowance, tokenData?.[3], (v) =>
-          formatEther(BigInt(v))
+          formatUnits(BigInt(v), decimals)
         )}
         {/* Allowance (wei) */}
         {renderField("Allowance (wei)", tokenAllowance, tokenData?.[3], (v) =>
