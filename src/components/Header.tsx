@@ -12,29 +12,32 @@ type HeaderProps = ComponentPropsWithoutRef<"header"> & {
 
 export const Header = ({ title, className, ...props }: HeaderProps) => (
   <header className={cn("py-4", className)} {...props}>
-    <Card className="flex flex-row items-center justify-between px-4 py-2">
+    <Card className="flex flex-row items-center justify-between px-2 sm:px-4 py-2">
       <div className="flex items-center justify-center gap-2">
-        <TicketsPlane className="size-10 text-[#ff8000] -mt-1.5" />
-        <span className="text-foreground font-bold text-2xl">{title}</span>
+        <TicketsPlane className="size-8 sm:size-10 text-[#ff8000] -mt-1.5" />
+        <span className="text-foreground font-bold text-base sm:text-xl">
+          {title}
+        </span>
 
         <a
           href="https://github.com/silent7-x/tsender-ui"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub"
-          className="hover:scale-110 transition-transform duration-200"
+          className="hover:scale-110 transition-transform duration-200 "
         >
-          <FaGithub className="size-8 mx-2" />
+          <FaGithub className="size-6 sm:size-8 mx-0.5 lg:mx-2" />
         </a>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground hidden lg:block text-sm">
           "The most gas efficient airdrop contract on earth!"
         </p>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         <ConnectButton
+          accountStatus={{ smallScreen: "avatar", largeScreen: "full" }}
           showBalance={false}
-          chainStatus="icon"
+          chainStatus={{ smallScreen: "icon", largeScreen: "icon" }}
           label="Connect Wallet"
         />
         <ModeToggle />
