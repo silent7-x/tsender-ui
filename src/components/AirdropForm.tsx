@@ -286,7 +286,7 @@ export const AirdropForm = ({ className, ...props }: AirdropFormProps) => {
             )}
           />
 
-          {tokenAddress && account.address && (
+          {account.address && (
             <TokenInfos
               tokenData={enhancedTokenData}
               amounts={amounts}
