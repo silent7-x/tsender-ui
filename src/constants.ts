@@ -3,13 +3,6 @@ type ContractsConfig = Record<
   { tsender: string; no_check: string | null }
 >;
 
-// interface ContractsConfig {
-//   [chainId: number]: {
-//       tsender: string
-//       no_check: string | null
-//   }
-// }
-
 export const chainsToTSender: ContractsConfig = {
   324: {
     tsender: "0x7e645Ea4386deb2E9e510D805461aA12db83fb5E",

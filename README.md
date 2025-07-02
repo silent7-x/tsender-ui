@@ -1,54 +1,105 @@
-# React + TypeScript + Vite
+![Vite](https://img.shields.io/badge/Vite-%23646CFF.svg?logo=vite&logoColor=white)
+![React 19](https://img.shields.io/badge/React-19-blue?logo=react&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?logo=tailwind-css&logoColor=white)
+![shadcn/ui](https://img.shields.io/badge/shadcn%2Fui-components-indigo?logo=radix&logoColor=white)
+![📱 Responsive](https://img.shields.io/badge/%F0%9F%93%B1%20Responsive-Yes-47C272)
+![Light/Dark Mode](https://img.shields.io/badge/Theme-Light%2FDark-8F8F8F?logo=css3&logoColor=white)
+![RainbowKit](https://img.shields.io/badge/RainbowKit-Web3-purple?logo=walletconnect&logoColor=white)
+![wagmi + viem](https://img.shields.io/badge/Wagmi%20%2B%20Viem-Web3-cyan?logo=polkadot&logoColor=white)
+![zod](https://img.shields.io/badge/zod-validation-red?logo=Zod&logoColor=white)
+![react-hook-form](https://img.shields.io/badge/react--hook--form-forms-orange?logo=react&logoColor=white)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# 📬 TSender UI
 
-Currently, two official plugins are available:
+_Modern Web3 frontend to manage EVM airdrop transactions with a clean, fast UI._
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Description
 
-## Expanding the ESLint configuration
+**TSender UI** is a next-gen React interface to send ERC20 airdrops to multiple addresses in a single transaction — across multiple EVM chains.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Built for speed, clarity, and power: advanced validation, instant feedback, light/dark mode, and a design system based on **shadcn/ui** + **Tailwind CSS**.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 🎨 Technologies Used
+
+- ⚛️ **[React 19](https://react.dev/)** – JavaScript library for building user interfaces
+- 🧠 **[TypeScript](https://www.typescriptlang.org/)** – Typed JavaScript for better DX and maintainability
+- ⚡ **[Vite](https://vitejs.dev/)** – Lightning-fast frontend build tool
+- 💨 **[Tailwind CSS v4](https://tailwindcss.com/)** – Utility-first CSS framework
+- 🎨 **[shadcn/ui](https://ui.shadcn.dev/)** – Beautifully styled and accessible components using Radix UI + Tailwind CSS
+- 🦄 **[RainbowKit](https://www.rainbowkit.com/)** – Wallet connector for Web3 dApps
+- ⚙️ **[wagmi](https://wagmi.sh/)** + **[viem](https://viem.sh/)** – Modern Web3 libraries for interacting with EVM
+- 🧪 **[Vitest](https://vitest.dev/)** – Ultra-fast testing framework
+- 📏 **[zod](https://zod.dev/)** – Type-safe schema validation
+- 🪝 **[react-hook-form](https://react-hook-form.com/)** – Performant declarative form management
+- 🧱 **[clsx](https://github.com/lukeed/clsx)**, **[tailwind-merge](https://github.com/dcastil/tailwind-merge)** & **[class-variance-authority](https://cva.style/)** – Utility tools for optimized Tailwind class composition
+
+## 📸 Previews
+
+<p align="center">
+  <img src="previews/landingPage.png" alt="TSender landing page" >
+  &nbsp;&nbsp;
+  <img src="previews/darkMode.png" alt="TSender dark mode preview" >
+  &nbsp;&nbsp;
+  <img src="previews/lightMode.png" alt="TSender light mode preview" >
+  &nbsp;&nbsp;
+  <img src="previews/networkError.png" alt="TSender error state preview" >
+  &nbsp;&nbsp;
+  <img src="previews/wrongNetwork.png" alt="TSender error state preview" >
+</p>
+
+## ✅ Core Features
+
+- 🔐 **Connect Wallet** – Powered by RainbowKit + wagmi
+- 🪙 **Token Detection** – Detects name, decimals, balance, and allowance
+- 🧾 **Approval Flow** – Handles ERC20 approvals for batch transfers
+- ✈️ **Airdrop Engine** – Batch send with validation and live feedback
+- 🧮 **Address & Amount Validation** – Powered by zod and custom helpers
+- 🔥 **Instant Feedback** – Toasts, loading states, and error messaging
+- 🛡️ **Basic Security Checks** – Validation and network enforcement
+- 🌐 **Network Support** – Ethereum, Base, Arbitrum, Optimism, Anvil, and more
+- 🌘 **Dark & Light Mode** – Fully themeable via next-themes
+- 💾 **Form Persistence** – Saves input state to localStorage
+- 🚨 **Error Handling** – Clean toasts, modals, and edge-case handling
+
+## 🔧 Installation & Setup
+
+1️⃣ **Clone the repository**
+
+```sh
+git clone https://github.com/silent7-x/tsender-ui
+cd tsender-ui
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2️⃣ **Install dependencies**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+```sh
+pnpm install
 ```
+
+3️⃣ **Set up your environment variables**
+
+Copy the provided .env.example file and fill in your credentials:
+
+```sh
+cp .env.example .env
+```
+
+4️⃣ **Run the project**
+
+```sh
+pnpm run dev
+```
+
+5️⃣ **Open in your browser**
+
+Vite will start a local server. Open **[http://localhost:5173/](http://localhost:5173/)** in your browser.
+
+## 🌟 Contributing
+
+Feel free to contribute! Fork the repo and submit a PR if you have improvements.
+
+## 📩 Contact
+
+💻 GitHub: [@silen7-x](https://github.com/silent7-x)
+
+🐦 Twitter: [@silen7_x](https://x.com/silen7_x)
