@@ -37,7 +37,11 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
           coolMode={true}
-          theme={resolvedTheme === "dark" ? darkTheme() : lightTheme()}
+          theme={
+            resolvedTheme === "dark"
+              ? darkTheme(darkTheme.accentColors.orange)
+              : lightTheme(lightTheme.accentColors.orange)
+          }
         >
           {/* Only render children after client-side mounting */}
           {mounted ? children : null}
