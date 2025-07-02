@@ -12,11 +12,11 @@ inject();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <Web3Provider>
-      <ThemeProvider>
+    <ThemeProvider>
+      <Web3Provider>
         <App />
         <Toaster closeButton={true} duration={5000} />
-      </ThemeProvider>
-    </Web3Provider>
+      </Web3Provider>
+    </ThemeProvider>
   </StrictMode>
 );
