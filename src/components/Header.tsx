@@ -14,8 +14,8 @@ export const Header = ({ title, className, ...props }: HeaderProps) => (
   <header className={cn("py-4", className)} {...props}>
     <Card className="flex flex-row items-center justify-between px-2 sm:px-4 py-2">
       <div className="flex items-center justify-center gap-2">
-        <TicketsPlane className="size-8 sm:size-10 text-[#ff8000] -mt-1.5" />
-        <span className="text-foreground font-bold text-base sm:text-xl">
+        <TicketsPlane className="size-7 sm:size-9 text-[#ff8000] -mt-1.5" />
+        <span className="text-foreground font-bold text-sm sm:text-xl">
           {title}
         </span>
 

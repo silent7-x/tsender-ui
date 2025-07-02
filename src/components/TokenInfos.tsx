@@ -29,16 +29,16 @@ const renderField = (
   formatter?: (v: string | number | bigint) => string
 ) => (
   <div className="flex flex-row items-center flex-wrap">
-    <span className="font-medium min-w-[130px]">{label}:</span>
+    <span className="font-medium min-w-[120px] sm:min-w-[130px]">{label}:</span>
     {errorObj?.status === "failure" ? (
       <span className="text-destructive">
         {errorObj?.error?.cause?.details || "N/A"}
       </span>
     ) : value !== null && value !== undefined ? (
       formatter ? (
-        formatter(value)
+        <span className="max-sm:text-xs">{formatter(value)}</span>
       ) : (
-        value
+        <span className="max-sm:text-xs">{value}</span>
       )
     ) : (
       "N/A"
@@ -62,14 +62,18 @@ export const TokenInfos = ({
   const renderTotalAmount = () => (
     <>
       <div className="flex flex-row items-center flex-wrap">
-        <span className="font-medium min-w-[130px]">Total amount:</span>
-        <span className="break-all">
+        <span className="font-medium min-w-[120px] sm:min-w-[130px]">
+          Total amount:
+        </span>
+        <span className="break-all max-sm:text-xs">
           {formatUnits(sumBigIntStrings(parseAmounts(amounts)), decimals)}
         </span>
       </div>
       <div className="flex flex-row items-center flex-wrap">
-        <span className="font-medium min-w-[130px]">Total (wei):</span>
-        <span className="break-all">
+        <span className="font-medium min-w-[120px] sm:min-w-[130px]">
+          Total (wei):
+        </span>
+        <span className="break-all max-sm:text-xs">
           {sumBigIntStrings(parseAmounts(amounts)).toString()}
         </span>
       </div>
