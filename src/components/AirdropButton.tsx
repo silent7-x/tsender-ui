@@ -271,17 +271,21 @@ export const AirdropButton = ({
                   />
                 </svg>
               </span>
-              <AlertDialogTitle className="text-green-400 text-2xl font-bold">
+              <AlertDialogTitle className="text-green-400 text-xl sm:text-2xl font-bold">
                 Airdrop sent successfully!
               </AlertDialogTitle>
             </div>
           </AlertDialogHeader>
-          <div className="text-base text-green-100 mt-2">
-            <p>Your airdrop transaction has been confirmed on-chain.</p>
+          <div className="text-sm sm:text-base text-green-100 mt-2">
+            <p>Your airdrop transaction has been confirmed on-chain</p>
             {hash && (
               <>
-                <p className="mt-2 font-mono break-all text-green-300">Hash:</p>
-                <p className="font-mono break-all text-green-300">{hash}</p>
+                <p className="mt-2 font-mono break-all text-sm sm:text-base text-green-300">
+                  Hash:
+                </p>
+                <p className="font-mono break-all text-sm sm:text-base text-green-300">
+                  {hash}
+                </p>
               </>
             )}
           </div>
