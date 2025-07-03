@@ -45,6 +45,8 @@ Built for speed, clarity, and power: advanced validation, instant feedback, ligh
   <img src="previews/networkError.png" alt="TSender error state preview" >
   &nbsp;&nbsp;
   <img src="previews/wrongNetwork.png" alt="TSender error state preview" >
+  &nbsp;&nbsp;
+  <img src="previews/transactionConfirmed.png" alt="TSender airdrop confirmed preview" >
 </p>
 
 ## ✅ Core Features
