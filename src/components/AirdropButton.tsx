@@ -1,10 +1,23 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { tsenderAbi } from "@/constants";
 import { formSchema, submitSchema } from "@/lib/schemas/airdrop";
 import { getTokenBalance } from "@/lib/utils/balance";
 import { sumBigIntStrings } from "@/lib/utils/form-helpers";
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useRef, type ComponentPropsWithoutRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 import { toast } from "sonner";
 import { isAddress, type Address } from "viem";
 import {
@@ -59,6 +72,8 @@ export const AirdropButton = ({
     hash,
   });
 
+  const [showSuccessAlert, setShowSuccessAlert] = useState<boolean>(false);
+
   useEffect(() => {
     if (hash) {
       hasShownToastRef.current = {
@@ -94,7 +109,7 @@ export const AirdropButton = ({
           </pre>
         ),
       });
-
+      setShowSuccessAlert(true);
       onAfterActionRef.current?.();
     }
 
@@ -224,17 +239,63 @@ export const AirdropButton = ({
   };
 
   return (
-    <Button
-      type="button"
-      onClick={() => handleAirdrop(formData)}
-      disabled={isPending || isConfirming || disabled}
-      className="w-58 cursor-pointer"
-    >
-      {isPending || isConfirming ? (
-        <LoaderCircle className="size-6 animate-[spin_2s_linear_infinite]" />
-      ) : (
-        "Send Airdrop"
-      )}
-    </Button>
+    <>
+      <Button
+        type="button"
+        onClick={() => handleAirdrop(formData)}
+        disabled={isPending || isConfirming || disabled}
+        className="w-58 cursor-pointer"
+      >
+        {isPending || isConfirming ? (
+          <LoaderCircle className="size-6 animate-[spin_2s_linear_infinite]" />
+        ) : (
+          "Send Airdrop"
+        )}
+      </Button>
+      <AlertDialog open={showSuccessAlert} onOpenChange={setShowSuccessAlert}>
+        <AlertDialogContent
+          className="bg-green-950 border-green-700 shadow-2xl rounded-2xl text-center animate-in animate-fade-in animate-duration-300"
+          style={{ borderWidth: 2 }}
+        >
+          <AlertDialogHeader>
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-green-400">
+                <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="12" fill="#22c55e" opacity="0.2" />
+                  <path
+                    d="M7 13l3 3 7-7"
+                    stroke="#22c55e"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <AlertDialogTitle className="text-green-400 text-2xl font-bold">
+                Airdrop sent successfully!
+              </AlertDialogTitle>
+            </div>
+          </AlertDialogHeader>
+          <div className="text-base text-green-100 mt-2">
+            <p>Your airdrop transaction has been confirmed on-chain.</p>
+            {hash && (
+              <>
+                <p className="mt-2 font-mono break-all text-green-300">Hash:</p>
+                <p className="font-mono break-all text-green-300">{hash}</p>
+              </>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => setShowSuccessAlert(false)}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+              autoFocus
+            >
+              Close
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

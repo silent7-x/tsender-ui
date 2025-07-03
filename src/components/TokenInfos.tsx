@@ -29,7 +29,7 @@ const renderField = (
   formatter?: (v: string | number | bigint) => string
 ) => (
   <div className="flex flex-row items-center flex-wrap">
-    <span className="font-medium min-w-[120px] sm:min-w-[130px]">{label}:</span>
+    <span className="font-medium min-w-[118px] sm:min-w-[130px]">{label}:</span>
     {errorObj?.status === "failure" ? (
       <span className="text-destructive">
         {errorObj?.error?.cause?.details || "N/A"}
@@ -62,7 +62,7 @@ export const TokenInfos = ({
   const renderTotalAmount = () => (
     <>
       <div className="flex flex-row items-center flex-wrap">
-        <span className="font-medium min-w-[120px] sm:min-w-[130px]">
+        <span className="font-medium min-w-[118px] sm:min-w-[130px]">
           Total amount:
         </span>
         <span className="break-all max-sm:text-xs">
@@ -70,7 +70,7 @@ export const TokenInfos = ({
         </span>
       </div>
       <div className="flex flex-row items-center flex-wrap">
-        <span className="font-medium min-w-[120px] sm:min-w-[130px]">
+        <span className="font-medium min-w-[118px] sm:min-w-[130px]">
           Total (wei):
         </span>
         <span className="break-all max-sm:text-xs">
@@ -113,7 +113,7 @@ export const TokenInfos = ({
   }
 
   return (
-    <div className="mb-6 py-2 px-4 rounded-md border border-input bg-transparent text-sm text-muted-foreground dark:bg-input/30 shadow-xs">
+    <div className="mb-6 py-2 px-2.5 sm:px-4 rounded-md border border-input bg-transparent text-sm text-muted-foreground dark:bg-input/30 shadow-xs">
       <div className="space-y-1">
         {allFailed && (
           <p className="text-destructive mb-2">
